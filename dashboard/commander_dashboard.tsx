@@ -24,7 +24,7 @@ interface CouncilStatus {
   session_uptime_s: number
   session_started: string
   total_tasks_dispatched: number
-  agents: Record<string, { status: string; last_run: string | null; description?: string; capabilities?: string[] }>
+  agents: Record<string, { status: string; last_run: string | null }>
 }
 
 interface Alert {
@@ -34,6 +34,16 @@ interface Alert {
   component: string
   timestamp: string
   acknowledged: boolean
+}
+
+interface AIResponse {
+  agent: string
+  agent_name: string
+  task: string
+  response: string
+  model: string
+  auto_routed: boolean
+  timestamp: string
 }
 
 // ---------------------------------------------------------------------------
@@ -55,6 +65,23 @@ const SEVERITY_COLORS: Record<string, string> = {
   low: '#6b7280',
   info: '#3b82f6',
 }
+
+const AGENT_OPTIONS = [
+  { value: '', label: 'Auto-route (recommended)' },
+  { value: 'finance', label: 'FinanceAgent' },
+  { value: 'operations', label: 'OperationsAgent' },
+  { value: 'strategy', label: 'StrategyAgent' },
+  { value: 'document', label: 'DocumentAgent' },
+  { value: 'watchtower', label: 'WatchtowerAgent' },
+]
+
+const EXAMPLE_TASKS = [
+  'Analyze budget variance and recommend cost reductions for Q2',
+  'What are the top 3 operational risks this quarter?',
+  'Draft a market entry strategy for the GCC region',
+  'Summarise the key findings from our latest performance review',
+  'Run a health check and flag any anomalies in system uptime',
+]
 
 function formatUptime(seconds: number): string {
   const h = Math.floor(seconds / 3600)
@@ -88,39 +115,26 @@ function AgentCard({ agent, detail }: { agent: AgentInfo; detail?: { status: str
   const color = AGENT_COLORS[agent.id] || '#6366f1'
   return (
     <div style={{
-      background: '#111827',
-      border: `1px solid ${color}33`,
-      borderRadius: 12,
-      padding: '1.25rem',
-      transition: 'box-shadow 0.2s',
+      background: '#111827', border: `1px solid ${color}33`, borderRadius: 12, padding: '1.25rem', transition: 'box-shadow 0.2s',
     }}
       onMouseEnter={e => (e.currentTarget.style.boxShadow = `0 0 20px ${color}33`)}
       onMouseLeave={e => (e.currentTarget.style.boxShadow = 'none')}
     >
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
-        <div>
-          <span style={{ fontWeight: 700, fontSize: 15, color }}>{agent.name}</span>
-        </div>
+        <span style={{ fontWeight: 700, fontSize: 15, color }}>{agent.name}</span>
         {detail && <StatusBadge status={detail.status} />}
       </div>
       <p style={{ color: '#94a3b8', fontSize: 12, marginBottom: 10, lineHeight: 1.5 }}>{agent.description}</p>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
         {agent.capabilities.map(cap => (
           <span key={cap} style={{
-            background: `${color}18`,
-            color,
-            border: `1px solid ${color}44`,
-            borderRadius: 999,
-            padding: '2px 8px',
-            fontSize: 10,
-            fontFamily: 'monospace',
+            background: `${color}18`, color, border: `1px solid ${color}44`,
+            borderRadius: 999, padding: '2px 8px', fontSize: 10, fontFamily: 'monospace',
           }}>{cap}</span>
         ))}
       </div>
       {detail?.last_run && (
-        <p style={{ color: '#475569', fontSize: 11, marginTop: 10 }}>
-          Last run: {timeAgo(detail.last_run)}
-        </p>
+        <p style={{ color: '#475569', fontSize: 11, marginTop: 10 }}>Last run: {timeAgo(detail.last_run)}</p>
       )}
     </div>
   )
@@ -129,10 +143,8 @@ function AgentCard({ agent, detail }: { agent: AgentInfo; detail?: { status: str
 function ActivityFeed({ entries }: { entries: ActivityEntry[] }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-      {entries.length === 0 && (
-        <p style={{ color: '#475569', fontSize: 13, textAlign: 'center', padding: '1rem 0' }}>No activity yet</p>
-      )}
-      {[...entries].reverse().slice(0, 20).map((e, i) => (
+      {entries.length === 0 && <p style={{ color: '#475569', fontSize: 13, textAlign: 'center', padding: '1rem 0' }}>No activity yet</p>}
+      {[...entries].reverse().slice(0, 30).map((e, i) => (
         <div key={i} style={{ background: '#0f172a', borderRadius: 8, padding: '0.6rem 0.9rem', borderLeft: '3px solid #6366f1' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
             <span style={{ color: '#a5b4fc', fontWeight: 600, fontSize: 13, fontFamily: 'monospace' }}>{e.task}</span>
@@ -149,18 +161,13 @@ function AlertPanel({ alerts }: { alerts: Alert[] }) {
   const sorted = [...alerts].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-      {sorted.length === 0 && (
-        <p style={{ color: '#475569', fontSize: 13, textAlign: 'center', padding: '1rem 0' }}>No alerts</p>
-      )}
+      {sorted.length === 0 && <p style={{ color: '#475569', fontSize: 13, textAlign: 'center', padding: '1rem 0' }}>No alerts</p>}
       {sorted.slice(0, 10).map(alert => {
         const color = SEVERITY_COLORS[alert.severity] || '#6b7280'
         return (
           <div key={alert.alert_id} style={{
-            background: '#0f172a',
-            borderLeft: `3px solid ${color}`,
-            borderRadius: 8,
-            padding: '0.6rem 0.9rem',
-            opacity: alert.acknowledged ? 0.5 : 1,
+            background: '#0f172a', borderLeft: `3px solid ${color}`, borderRadius: 8,
+            padding: '0.6rem 0.9rem', opacity: alert.acknowledged ? 0.5 : 1,
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 2 }}>
               <span style={{ color, fontSize: 11, fontWeight: 700, textTransform: 'uppercase' }}>{alert.severity}</span>
@@ -175,84 +182,172 @@ function AlertPanel({ alerts }: { alerts: Alert[] }) {
   )
 }
 
-function DispatchPanel({ onDispatched }: { onDispatched: () => void }) {
-  const TASKS = [
-    'budget_analysis', 'revenue_forecasting', 'risk_assessment',
-    'process_monitoring', 'kpi_tracking', 'market_analysis',
-    'document_summarisation', 'health_check', 'anomaly_detection', 'initiative_planning',
-  ]
+function AIResponseCard({ result }: { result: AIResponse }) {
+  const color = AGENT_COLORS[result.agent] || '#6366f1'
+  return (
+    <div style={{
+      background: '#0d1117', border: `1px solid ${color}44`, borderRadius: 12,
+      padding: '1.25rem', marginTop: 16,
+    }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{
+            background: `${color}22`, color, border: `1px solid ${color}44`,
+            borderRadius: 999, padding: '3px 10px', fontSize: 11, fontWeight: 700,
+          }}>
+            {result.agent_name}
+          </span>
+          {result.auto_routed && (
+            <span style={{ color: '#475569', fontSize: 11 }}>auto-routed</span>
+          )}
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ color: '#4ade80', fontSize: 11, fontFamily: 'monospace' }}>{result.model}</span>
+          <span style={{ color: '#475569', fontSize: 11 }}>{timeAgo(result.timestamp)}</span>
+        </div>
+      </div>
+      <p style={{ color: '#64748b', fontSize: 11, marginBottom: 12, fontStyle: 'italic' }}>
+        "{result.task}"
+      </p>
+      <div style={{
+        color: '#e2e8f0', fontSize: 13.5, lineHeight: 1.75,
+        whiteSpace: 'pre-wrap', wordBreak: 'break-word',
+      }}>
+        {result.response}
+      </div>
+    </div>
+  )
+}
 
-  const [task, setTask] = useState(TASKS[0])
+function DispatchPanel({ onDispatched }: { onDispatched: () => void }) {
+  const [task, setTask] = useState('')
+  const [agentKey, setAgentKey] = useState('')
+  const [context, setContext] = useState('')
   const [loading, setLoading] = useState(false)
-  const [result, setResult] = useState<string | null>(null)
+  const [aiResult, setAiResult] = useState<AIResponse | null>(null)
+  const [error, setError] = useState<string | null>(null)
+
+  const selectStyle = {
+    background: '#0f172a', border: '1px solid #1f2937', borderRadius: 8,
+    color: '#f1f5f9', padding: '0.5rem 0.75rem', fontSize: 13, width: '100%',
+  }
+
+  const inputStyle = {
+    ...selectStyle,
+    resize: 'vertical' as const,
+  }
 
   const dispatch = async () => {
+    if (!task.trim()) return
     setLoading(true)
-    setResult(null)
+    setAiResult(null)
+    setError(null)
     try {
-      const res = await axios.post('/api/council/dispatch', { task, payload: {} })
-      setResult(JSON.stringify(res.data, null, 2))
+      const res = await axios.post('/dispatch_task', {
+        task: task.trim(),
+        agent: agentKey || undefined,
+        context: context.trim() || undefined,
+      })
+      setAiResult(res.data)
       onDispatched()
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { detail?: string } }; message?: string })?.response?.data?.detail || (err as { message?: string })?.message || 'Unknown error'
-      setResult(`Error: ${msg}`)
+      const detail = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail
+      setError(detail || 'Request failed. Check that the backend is running and your OpenAI key is set.')
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <div>
-      <div style={{ display: 'flex', gap: 10, marginBottom: 12 }}>
-        <select
+    <div style={{ maxWidth: 720 }}>
+      <p style={{ color: '#94a3b8', fontSize: 13, marginBottom: 16, lineHeight: 1.6 }}>
+        Type any business task below and let the AI Council route it to the right agent, powered by GPT-4o.
+      </p>
+
+      {/* Example tasks */}
+      <div style={{ marginBottom: 14 }}>
+        <p style={{ color: '#475569', fontSize: 11, marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Examples</p>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+          {EXAMPLE_TASKS.map(ex => (
+            <button key={ex} onClick={() => setTask(ex)} style={{
+              background: '#111827', border: '1px solid #1f2937', borderRadius: 999,
+              color: '#64748b', padding: '3px 10px', fontSize: 11, cursor: 'pointer',
+              transition: 'all 0.15s',
+            }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = '#6366f1'; e.currentTarget.style.color = '#a5b4fc' }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = '#1f2937'; e.currentTarget.style.color = '#64748b' }}
+            >
+              {ex}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Task input */}
+      <div style={{ marginBottom: 10 }}>
+        <label style={{ color: '#94a3b8', fontSize: 12, display: 'block', marginBottom: 5 }}>Task *</label>
+        <textarea
           value={task}
           onChange={e => setTask(e.target.value)}
-          style={{
-            flex: 1,
-            background: '#0f172a',
-            border: '1px solid #1f2937',
-            borderRadius: 8,
-            color: '#f1f5f9',
-            padding: '0.5rem 0.75rem',
-            fontSize: 13,
-            fontFamily: 'monospace',
-          }}
-        >
-          {TASKS.map(t => <option key={t} value={t}>{t}</option>)}
-        </select>
-        <button
-          onClick={dispatch}
-          disabled={loading}
-          style={{
-            background: loading ? '#374151' : '#6366f1',
-            color: '#fff',
-            border: 'none',
-            borderRadius: 8,
-            padding: '0.5rem 1.25rem',
-            cursor: loading ? 'not-allowed' : 'pointer',
-            fontWeight: 600,
-            fontSize: 13,
-            transition: 'background 0.2s',
-          }}
-        >
-          {loading ? '...' : 'Dispatch'}
-        </button>
+          placeholder="Describe what you want the agent to do..."
+          rows={3}
+          style={{ ...inputStyle, width: '100%' }}
+          onKeyDown={e => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) dispatch() }}
+        />
       </div>
-      {result && (
-        <pre style={{
-          background: '#0a0d14',
-          border: '1px solid #1f2937',
-          borderRadius: 8,
-          padding: '0.75rem',
-          fontSize: 11,
-          color: '#94a3b8',
-          overflowX: 'auto',
-          maxHeight: 240,
-          overflowY: 'auto',
-          whiteSpace: 'pre-wrap',
-          wordBreak: 'break-word',
-        }}>{result}</pre>
+
+      {/* Agent + Context row */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 10, marginBottom: 14 }}>
+        <div>
+          <label style={{ color: '#94a3b8', fontSize: 12, display: 'block', marginBottom: 5 }}>Agent</label>
+          <select value={agentKey} onChange={e => setAgentKey(e.target.value)} style={selectStyle}>
+            {AGENT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+          </select>
+        </div>
+        <div>
+          <label style={{ color: '#94a3b8', fontSize: 12, display: 'block', marginBottom: 5 }}>Context (optional)</label>
+          <input
+            value={context}
+            onChange={e => setContext(e.target.value)}
+            placeholder="Extra background for the agent..."
+            style={{ ...selectStyle, width: '100%' }}
+          />
+        </div>
+      </div>
+
+      {/* Dispatch button */}
+      <button
+        onClick={dispatch}
+        disabled={loading || !task.trim()}
+        style={{
+          background: loading || !task.trim() ? '#374151' : 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+          color: '#fff', border: 'none', borderRadius: 8, padding: '0.65rem 1.75rem',
+          cursor: loading || !task.trim() ? 'not-allowed' : 'pointer',
+          fontWeight: 700, fontSize: 14, transition: 'all 0.2s',
+          display: 'flex', alignItems: 'center', gap: 8,
+        }}
+      >
+        {loading ? (
+          <>
+            <span style={{ display: 'inline-block', width: 14, height: 14, border: '2px solid #ffffff44', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+            Thinking...
+          </>
+        ) : 'Send to Agent  ↵'}
+      </button>
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+
+      {/* Error */}
+      {error && (
+        <div style={{
+          marginTop: 14, background: '#1c0a0a', border: '1px solid #ef444444',
+          borderRadius: 8, padding: '0.75rem 1rem', color: '#fca5a5', fontSize: 13,
+        }}>
+          {error}
+        </div>
       )}
+
+      {/* AI Response */}
+      {aiResult && <AIResponseCard result={aiResult} />}
     </div>
   )
 }
@@ -267,21 +362,24 @@ export default function CommanderDashboard() {
   const [activity, setActivity] = useState<ActivityEntry[]>([])
   const [alerts, setAlerts] = useState<Alert[]>([])
   const [backendOnline, setBackendOnline] = useState<boolean | null>(null)
+  const [openaiConfigured, setOpenaiConfigured] = useState<boolean | null>(null)
   const [activeTab, setActiveTab] = useState<'agents' | 'activity' | 'alerts' | 'dispatch'>('agents')
 
   const fetchAll = useCallback(async () => {
     try {
-      const [agentsRes, statusRes, activityRes, alertsRes] = await Promise.allSettled([
+      const [agentsRes, statusRes, activityRes, alertsRes, healthRes] = await Promise.allSettled([
         axios.get('/api/council/agents'),
         axios.get('/api/council/status'),
         axios.get('/api/council/activity?limit=30'),
         axios.get('/api/agents/watchtower/alerts'),
+        axios.get('/health'),
       ])
 
       if (agentsRes.status === 'fulfilled') setAgents(agentsRes.value.data.agents)
       if (statusRes.status === 'fulfilled') setCouncilStatus(statusRes.value.data)
       if (activityRes.status === 'fulfilled') setActivity(activityRes.value.data.log)
       if (alertsRes.status === 'fulfilled') setAlerts(alertsRes.value.data.alerts)
+      if (healthRes.status === 'fulfilled') setOpenaiConfigured(healthRes.value.data.openai_configured)
       setBackendOnline(true)
     } catch {
       setBackendOnline(false)
@@ -300,19 +398,16 @@ export default function CommanderDashboard() {
     { id: 'agents' as const, label: 'Agents', count: agents.length },
     { id: 'activity' as const, label: 'Activity', count: activity.length },
     { id: 'alerts' as const, label: 'Alerts', count: unacknowledgedAlerts.length },
-    { id: 'dispatch' as const, label: 'Dispatch', count: null },
+    { id: 'dispatch' as const, label: 'AI Dispatch', count: null },
   ]
 
   return (
     <div style={{ minHeight: '100vh', background: '#0a0d14', color: '#f1f5f9', fontFamily: "'Segoe UI', system-ui, sans-serif" }}>
+
       {/* Header */}
       <header style={{
-        borderBottom: '1px solid #1f2937',
-        padding: '1rem 2rem',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        background: '#0d1117',
+        borderBottom: '1px solid #1f2937', padding: '1rem 2rem',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#0d1117',
       }}>
         <div>
           <h1 style={{ fontSize: '1.4rem', fontWeight: 800, background: 'linear-gradient(135deg, #6366f1, #a78bfa)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
@@ -326,12 +421,17 @@ export default function CommanderDashboard() {
               Uptime: <span style={{ color: '#a5b4fc' }}>{formatUptime(councilStatus.session_uptime_s)}</span>
             </span>
           )}
+          {openaiConfigured !== null && (
+            <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12 }}>
+              <span style={{ width: 7, height: 7, borderRadius: '50%', background: openaiConfigured ? '#4ade80' : '#f59e0b', display: 'inline-block' }} />
+              <span style={{ color: openaiConfigured ? '#4ade80' : '#f59e0b' }}>{openaiConfigured ? 'GPT-4o Ready' : 'No OpenAI Key'}</span>
+            </span>
+          )}
           <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12 }}>
             <span style={{
               width: 8, height: 8, borderRadius: '50%',
               background: backendOnline === null ? '#eab308' : backendOnline ? '#4ade80' : '#ef4444',
-              boxShadow: backendOnline ? '0 0 6px #4ade80' : undefined,
-              display: 'inline-block',
+              boxShadow: backendOnline ? '0 0 6px #4ade80' : undefined, display: 'inline-block',
             }} />
             <span style={{ color: backendOnline ? '#4ade80' : '#ef4444' }}>
               {backendOnline === null ? 'Connecting…' : backendOnline ? 'API Online' : 'API Offline'}
@@ -342,9 +442,7 @@ export default function CommanderDashboard() {
 
       {/* Stats bar */}
       {councilStatus && (
-        <div style={{
-          display: 'flex', gap: 1, background: '#111827', borderBottom: '1px solid #1f2937',
-        }}>
+        <div style={{ display: 'flex', gap: 1, background: '#111827', borderBottom: '1px solid #1f2937' }}>
           {[
             { label: 'Agents', value: Object.keys(councilStatus.agents).length },
             { label: 'Tasks Dispatched', value: councilStatus.total_tasks_dispatched },
@@ -362,24 +460,13 @@ export default function CommanderDashboard() {
       {/* Tabs */}
       <div style={{ display: 'flex', borderBottom: '1px solid #1f2937', padding: '0 2rem', background: '#0d1117' }}>
         {tabs.map(tab => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            style={{
-              background: 'none',
-              border: 'none',
-              borderBottom: activeTab === tab.id ? '2px solid #6366f1' : '2px solid transparent',
-              color: activeTab === tab.id ? '#a5b4fc' : '#475569',
-              padding: '0.75rem 1.25rem',
-              cursor: 'pointer',
-              fontSize: 13,
-              fontWeight: 600,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
-              transition: 'color 0.15s',
-            }}
-          >
+          <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{
+            background: 'none', border: 'none',
+            borderBottom: activeTab === tab.id ? '2px solid #6366f1' : '2px solid transparent',
+            color: activeTab === tab.id ? '#a5b4fc' : '#475569',
+            padding: '0.75rem 1.25rem', cursor: 'pointer', fontSize: 13, fontWeight: 600,
+            display: 'flex', alignItems: 'center', gap: 6, transition: 'color 0.15s',
+          }}>
             {tab.label}
             {tab.count !== null && tab.count > 0 && (
               <span style={{
@@ -398,19 +485,10 @@ export default function CommanderDashboard() {
         {activeTab === 'agents' && (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1rem' }}>
             {agents.map(agent => (
-              <AgentCard
-                key={agent.id}
-                agent={agent}
-                detail={councilStatus?.agents[agent.id]}
-              />
+              <AgentCard key={agent.id} agent={agent} detail={councilStatus?.agents[agent.id]} />
             ))}
             {agents.length === 0 && backendOnline === false && (
-              <div style={{
-                gridColumn: '1 / -1',
-                textAlign: 'center',
-                padding: '3rem',
-                color: '#475569',
-              }}>
+              <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '3rem', color: '#475569' }}>
                 <p style={{ fontSize: 16, marginBottom: 8 }}>Backend API is offline</p>
                 <p style={{ fontSize: 13 }}>Start the Python API server to connect the dashboard.</p>
               </div>
@@ -419,17 +497,8 @@ export default function CommanderDashboard() {
         )}
 
         {activeTab === 'activity' && <ActivityFeed entries={activity} />}
-
         {activeTab === 'alerts' && <AlertPanel alerts={alerts} />}
-
-        {activeTab === 'dispatch' && (
-          <div style={{ maxWidth: 600 }}>
-            <p style={{ color: '#94a3b8', fontSize: 13, marginBottom: 16 }}>
-              Select a task and dispatch it to the AI Council. The council will route it to the appropriate agent(s) automatically.
-            </p>
-            <DispatchPanel onDispatched={fetchAll} />
-          </div>
-        )}
+        {activeTab === 'dispatch' && <DispatchPanel onDispatched={fetchAll} />}
       </main>
     </div>
   )

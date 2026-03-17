@@ -3,8 +3,27 @@ DocumentAgent – Processes, summarises, and generates business documents.
 Handles extraction, classification, and structured output from text.
 """
 
+import sys, os
+sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+
 from datetime import datetime
 from typing import Any
+
+from services.llm_service import chat, LLMError
+
+SYSTEM_PROMPT = """You are the DocumentAgent for Abdeljelil Group, part of the ANIS-1 Autonomous Neural Intelligence System.
+
+Your mandate is to transform unstructured information into clear, actionable, well-structured documents.
+
+Behavioural guidelines:
+- Preserve the original meaning faithfully when summarising or extracting.
+- Label inferences clearly – never present them as facts.
+- Structure all output for readability: headings, bullets, and concise paragraphs.
+- Flag missing, ambiguous, or conflicting information rather than guessing.
+- Adapt document style to the audience (executive, technical, operational).
+
+Tone: Clear, structured, neutral.
+Scope: Document processing · Summarisation · Data extraction · Report generation."""
 
 
 class DocumentAgent:
@@ -24,8 +43,35 @@ class DocumentAgent:
         self._processed_count = 0
 
     # ------------------------------------------------------------------
+    # AI-powered method
+    # ------------------------------------------------------------------
+
+    def ask(self, task_description: str, context: str = "") -> dict[str, Any]:
+        """Send a free-form task to OpenAI using the DocumentAgent system prompt."""
+        self.status = "active"
+        self.last_run = datetime.utcnow()
+
+        user_message = f"Context:\n{context}\n\nTask:\n{task_description}" if context else task_description
+
+        try:
+            response = chat(SYSTEM_PROMPT, user_message)
+            self.status = "idle"
+            return {
+                "agent": self.name,
+                "task": task_description,
+                "timestamp": datetime.utcnow().isoformat(),
+                "response": response,
+                "model": "gpt-4o",
+            }
+        except LLMError as exc:
+            self.status = "idle"
+            return {"agent": self.name, "error": str(exc), "timestamp": datetime.utcnow().isoformat()}
+
+    # ------------------------------------------------------------------
+    # Deterministic methods (unchanged)
+    # ------------------------------------------------------------------
+
     def process_document(self, document: dict[str, Any]) -> dict[str, Any]:
-        """Parse a document and return structured metadata."""
         self.status = "active"
         self.last_run = datetime.utcnow()
         self._processed_count += 1
@@ -33,7 +79,6 @@ class DocumentAgent:
         text = document.get("content", "")
         word_count = len(text.split())
         doc_type = document.get("type", "unknown")
-
         classification = self._classify(text, doc_type)
 
         self.status = "idle"
@@ -49,7 +94,6 @@ class DocumentAgent:
         }
 
     def summarise(self, text: str, max_sentences: int = 3) -> dict[str, Any]:
-        """Return an extractive summary (first N sentences as a proxy)."""
         self.status = "active"
         self.last_run = datetime.utcnow()
 
@@ -67,7 +111,6 @@ class DocumentAgent:
         }
 
     def extract_data(self, text: str, fields: list[str]) -> dict[str, Any]:
-        """Attempt to locate field values within unstructured text."""
         self.status = "active"
         self.last_run = datetime.utcnow()
 
@@ -88,7 +131,6 @@ class DocumentAgent:
         }
 
     def generate_report(self, template: str = "standard", context: dict[str, Any] | None = None) -> dict[str, Any]:
-        """Generate a structured business report based on a template."""
         self.status = "active"
         self.last_run = datetime.utcnow()
         ctx = context or {}
@@ -109,7 +151,6 @@ class DocumentAgent:
             "report": sections,
         }
 
-    # ------------------------------------------------------------------
     def _classify(self, text: str, doc_type: str) -> str:
         keywords = {
             "financial": ["revenue", "budget", "profit", "loss", "invoice"],

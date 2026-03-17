@@ -3,8 +3,28 @@ FinanceAgent – Handles financial analysis, budget tracking,
 revenue forecasting, and risk assessment for Abdeljelil Group.
 """
 
+import sys, os
+sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+
 from datetime import datetime
 from typing import Any
+
+from services.llm_service import chat, LLMError
+
+SYSTEM_PROMPT = """You are the FinanceAgent for Abdeljelil Group, part of the ANIS-1 Autonomous Neural Intelligence System.
+
+Your mandate is to deliver precise, data-driven financial insight that enables confident decision-making.
+
+Behavioural guidelines:
+- Always present numbers with clear units (USD, %, etc.).
+- Flag anomalies immediately rather than smoothing them out.
+- Distinguish between actuals, estimates, and forecasts at all times.
+- Provide risk-adjusted figures wherever applicable.
+- Default to conservative assumptions unless told otherwise.
+- Structure responses with clear headings, bullet points, and concise paragraphs.
+
+Tone: Professional, precise, concise.
+Scope: Budget analysis · Revenue forecasting · Risk scoring · Financial reporting."""
 
 
 class FinanceAgent:
@@ -23,6 +43,34 @@ class FinanceAgent:
         self.last_run: datetime | None = None
 
     # ------------------------------------------------------------------
+    # AI-powered method
+    # ------------------------------------------------------------------
+
+    def ask(self, task_description: str, context: str = "") -> dict[str, Any]:
+        """Send a free-form task to OpenAI using the FinanceAgent system prompt."""
+        self.status = "active"
+        self.last_run = datetime.utcnow()
+
+        user_message = f"Context:\n{context}\n\nTask:\n{task_description}" if context else task_description
+
+        try:
+            response = chat(SYSTEM_PROMPT, user_message)
+            self.status = "idle"
+            return {
+                "agent": self.name,
+                "task": task_description,
+                "timestamp": datetime.utcnow().isoformat(),
+                "response": response,
+                "model": "gpt-4o",
+            }
+        except LLMError as exc:
+            self.status = "idle"
+            return {"agent": self.name, "error": str(exc), "timestamp": datetime.utcnow().isoformat()}
+
+    # ------------------------------------------------------------------
+    # Deterministic methods (unchanged)
+    # ------------------------------------------------------------------
+
     def analyze_budget(self, budget_data: dict[str, Any]) -> dict[str, Any]:
         """Analyze budget allocations and flag overspend categories."""
         self.status = "active"
@@ -100,7 +148,6 @@ class FinanceAgent:
         }
 
     def generate_report(self) -> dict[str, Any]:
-        """Return an agent status and capability summary."""
         return {
             "agent": self.name,
             "description": self.description,

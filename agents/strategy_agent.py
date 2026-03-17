@@ -3,8 +3,28 @@ StrategyAgent – Handles market analysis, strategic initiative planning,
 competitive intelligence, and long-term goal evaluation.
 """
 
+import sys, os
+sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+
 from datetime import datetime
 from typing import Any
+
+from services.llm_service import chat, LLMError
+
+SYSTEM_PROMPT = """You are the StrategyAgent for Abdeljelil Group, part of the ANIS-1 Autonomous Neural Intelligence System.
+
+Your mandate is to translate market intelligence and business objectives into a coherent, executable strategy.
+
+Behavioural guidelines:
+- Ground every recommendation in data or well-reasoned first principles.
+- Explicitly state your assumptions before drawing conclusions.
+- Quantify opportunity and risk wherever possible.
+- Present multiple strategic options before making a recommendation.
+- Consider short-term (0–6 months), mid-term (6–18 months), and long-term (18+ months) horizons.
+- Structure responses with clear headings, bullet points, and concise paragraphs.
+
+Tone: Analytical, forward-looking, authoritative.
+Scope: Market analysis · Competitive intelligence · Initiative planning · Risk evaluation."""
 
 
 class StrategyAgent:
@@ -24,8 +44,35 @@ class StrategyAgent:
         self._initiatives: list[dict[str, Any]] = []
 
     # ------------------------------------------------------------------
+    # AI-powered method
+    # ------------------------------------------------------------------
+
+    def ask(self, task_description: str, context: str = "") -> dict[str, Any]:
+        """Send a free-form task to OpenAI using the StrategyAgent system prompt."""
+        self.status = "active"
+        self.last_run = datetime.utcnow()
+
+        user_message = f"Context:\n{context}\n\nTask:\n{task_description}" if context else task_description
+
+        try:
+            response = chat(SYSTEM_PROMPT, user_message)
+            self.status = "idle"
+            return {
+                "agent": self.name,
+                "task": task_description,
+                "timestamp": datetime.utcnow().isoformat(),
+                "response": response,
+                "model": "gpt-4o",
+            }
+        except LLMError as exc:
+            self.status = "idle"
+            return {"agent": self.name, "error": str(exc), "timestamp": datetime.utcnow().isoformat()}
+
+    # ------------------------------------------------------------------
+    # Deterministic methods (unchanged)
+    # ------------------------------------------------------------------
+
     def analyze_market(self, market_data: dict[str, Any]) -> dict[str, Any]:
-        """Assess market conditions and identify strategic opportunities."""
         self.status = "active"
         self.last_run = datetime.utcnow()
 
@@ -51,7 +98,6 @@ class StrategyAgent:
         }
 
     def competitive_analysis(self, competitors: list[dict[str, Any]]) -> dict[str, Any]:
-        """Score competitors and identify differentiation opportunities."""
         self.status = "active"
         self.last_run = datetime.utcnow()
 
@@ -76,7 +122,6 @@ class StrategyAgent:
         }
 
     def plan_initiatives(self, objectives: list[str], horizon_months: int = 12) -> dict[str, Any]:
-        """Generate a phased initiative roadmap from business objectives."""
         self.status = "active"
         self.last_run = datetime.utcnow()
 
@@ -104,7 +149,6 @@ class StrategyAgent:
         }
 
     def evaluate_risks(self, strategy: str, risk_factors: list[str]) -> dict[str, Any]:
-        """Score strategic risks and return mitigation recommendations."""
         self.status = "active"
         self.last_run = datetime.utcnow()
 

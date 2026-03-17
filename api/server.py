@@ -1,6 +1,6 @@
 """
-ANIS-1 API Server – FastAPI backend exposing all agent capabilities
-and the AICouncil orchestration layer via a RESTful interface.
+ANIS-1 API Server – FastAPI backend exposing all agent capabilities,
+the AICouncil orchestration layer, and the real-AI dispatch endpoint.
 """
 
 import sys
@@ -15,6 +15,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from council.ai_council import AICouncil
+from services.llm_service import LLMError
 
 # ---------------------------------------------------------------------------
 app = FastAPI(
@@ -33,13 +34,37 @@ app.add_middleware(
 
 council = AICouncil()
 
+# Agent keyword routing for dispatch_task auto-detection
+_AGENT_KEYWORDS: dict[str, list[str]] = {
+    "finance": ["budget", "revenue", "forecast", "profit", "loss", "cash", "financial", "invoice", "expense", "cost", "risk", "funding"],
+    "operations": ["process", "workflow", "kpi", "incident", "sla", "capacity", "operations", "monitoring", "performance", "bottleneck"],
+    "strategy": ["market", "strategy", "competitive", "initiative", "goal", "objective", "vision", "growth", "expansion", "analysis"],
+    "document": ["document", "report", "summary", "extract", "draft", "write", "summarise", "classify", "text", "content"],
+    "watchtower": ["health", "alert", "anomaly", "uptime", "monitor", "system", "security", "threat", "status", "availability"],
+}
+
+def _auto_route(task_description: str) -> str:
+    """Return the best-matching agent key based on keywords in the task description."""
+    task_lower = task_description.lower()
+    scores = {
+        agent: sum(1 for kw in keywords if kw in task_lower)
+        for agent, keywords in _AGENT_KEYWORDS.items()
+    }
+    best = max(scores, key=lambda k: scores[k])
+    return best if scores[best] > 0 else "finance"  # default to finance
+
 # ---------------------------------------------------------------------------
-# Request schemas
+# Request / Response schemas
 # ---------------------------------------------------------------------------
 
 class DispatchRequest(BaseModel):
     task: str
     payload: dict[str, Any] = {}
+
+class DispatchTaskRequest(BaseModel):
+    task: str
+    agent: str | None = None   # optional: finance | operations | strategy | document | watchtower
+    context: str = ""          # optional extra context for the AI
 
 class BudgetRequest(BaseModel):
     allocations: dict[str, float]
@@ -77,35 +102,112 @@ class AlertRequest(BaseModel):
     component: str = "unknown"
 
 # ---------------------------------------------------------------------------
-# Root + health
+# Core routes (top-level, as requested)
+# ---------------------------------------------------------------------------
+
+@app.get("/health")
+@app.get("/api/health")
+def health():
+    """System health check — returns API status and key configuration."""
+    api_key_set = bool(os.getenv("OPENAI_API_KEY"))
+    return {
+        "status": "healthy",
+        "timestamp": datetime.utcnow().isoformat(),
+        "openai_configured": api_key_set,
+        "agents_online": len(council.agents),
+    }
+
+@app.get("/agents")
+@app.get("/api/council/agents")
+def list_agents():
+    """List all registered ANIS-1 agents with their capabilities and current status."""
+    return {"agents": council.agent_list()}
+
+@app.post("/dispatch_task")
+@app.post("/api/dispatch_task")
+async def dispatch_task(req: DispatchTaskRequest):
+    """
+    Send a natural-language task to the correct ANIS-1 agent and receive
+    a real AI-generated response powered by GPT-4o.
+
+    - If `agent` is provided, routes directly to that agent.
+    - If `agent` is omitted, auto-routes based on keywords in the task.
+    - Pass optional `context` to give the agent background information.
+    """
+    agent_key = req.agent or _auto_route(req.task)
+
+    if agent_key not in council.agents:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unknown agent '{agent_key}'. Valid options: {list(council.agents.keys())}",
+        )
+
+    agent = council.agents[agent_key]
+
+    if not hasattr(agent, "ask"):
+        raise HTTPException(status_code=500, detail=f"Agent '{agent_key}' does not support AI dispatch.")
+
+    try:
+        result = agent.ask(task_description=req.task, context=req.context)
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
+
+    if "error" in result:
+        raise HTTPException(status_code=502, detail=result["error"])
+
+    # Log to council activity feed
+    council._activity_log.append({
+        "task": req.task[:80],
+        "agents_dispatched": [agent_key],
+        "timestamp": datetime.utcnow().isoformat(),
+        "payload_keys": ["task", "context"] if req.context else ["task"],
+    })
+
+    return {
+        "system": "ANIS-1",
+        "agent": agent_key,
+        "agent_name": result.get("agent"),
+        "task": req.task,
+        "context_provided": bool(req.context),
+        "auto_routed": req.agent is None,
+        "model": result.get("model", "gpt-4o"),
+        "response": result.get("response"),
+        "timestamp": result.get("timestamp"),
+    }
+
+# ---------------------------------------------------------------------------
+# Root
 # ---------------------------------------------------------------------------
 
 @app.get("/")
 def root():
-    return {"system": "ANIS-1", "group": "Abdeljelil Group", "status": "online", "timestamp": datetime.utcnow().isoformat()}
-
-@app.get("/api/health")
-def health():
-    return {"status": "healthy", "timestamp": datetime.utcnow().isoformat()}
+    return {
+        "system": "ANIS-1",
+        "group": "Abdeljelil Group",
+        "status": "online",
+        "timestamp": datetime.utcnow().isoformat(),
+        "routes": {
+            "health":        "GET  /health",
+            "agents":        "GET  /agents",
+            "dispatch_task": "POST /dispatch_task",
+            "docs":          "GET  /docs",
+        },
+    }
 
 # ---------------------------------------------------------------------------
-# Council endpoints
+# Council endpoints (existing — dashboard uses these)
 # ---------------------------------------------------------------------------
 
 @app.get("/api/council/status")
 def council_status():
     return council.council_status()
 
-@app.get("/api/council/agents")
-def list_agents():
-    return {"agents": council.agent_list()}
-
 @app.get("/api/council/activity")
 def activity_log(limit: int = 20):
     return {"log": council.activity_log(limit=limit)}
 
 @app.post("/api/council/dispatch")
-def dispatch(req: DispatchRequest):
+def council_dispatch(req: DispatchRequest):
     result = council.dispatch(req.task, req.payload)
     if "error" in result:
         raise HTTPException(status_code=400, detail=result["error"])
@@ -117,18 +219,15 @@ def dispatch(req: DispatchRequest):
 
 @app.post("/api/agents/finance/budget")
 def finance_budget(req: BudgetRequest):
-    agent = council.agents["finance"]
-    return agent.analyze_budget({"allocations": req.allocations, "actuals": req.actuals})
+    return council.agents["finance"].analyze_budget({"allocations": req.allocations, "actuals": req.actuals})
 
 @app.post("/api/agents/finance/forecast")
 def finance_forecast(req: ForecastRequest):
-    agent = council.agents["finance"]
-    return agent.forecast_revenue(req.historical, req.periods)
+    return council.agents["finance"].forecast_revenue(req.historical, req.periods)
 
 @app.post("/api/agents/finance/risk")
 def finance_risk(req: RiskRequest):
-    agent = council.agents["finance"]
-    return agent.risk_assessment(req.factors)
+    return council.agents["finance"].risk_assessment(req.factors)
 
 @app.get("/api/agents/finance/report")
 def finance_report():
@@ -140,8 +239,7 @@ def finance_report():
 
 @app.post("/api/agents/operations/kpis")
 def ops_kpis(req: KpiRequest):
-    agent = council.agents["operations"]
-    return agent.track_kpis(req.kpis, req.targets)
+    return council.agents["operations"].track_kpis(req.kpis, req.targets)
 
 @app.get("/api/agents/operations/report")
 def ops_report():
@@ -153,8 +251,7 @@ def ops_report():
 
 @app.post("/api/agents/strategy/market")
 def strategy_market(req: MarketRequest):
-    agent = council.agents["strategy"]
-    return agent.analyze_market(req.model_dump())
+    return council.agents["strategy"].analyze_market(req.model_dump())
 
 @app.get("/api/agents/strategy/report")
 def strategy_report():
@@ -166,13 +263,11 @@ def strategy_report():
 
 @app.post("/api/agents/document/process")
 def document_process(req: DocumentRequest):
-    agent = council.agents["document"]
-    return agent.process_document(req.model_dump())
+    return council.agents["document"].process_document(req.model_dump())
 
 @app.post("/api/agents/document/summarise")
 def document_summarise(req: SummariseRequest):
-    agent = council.agents["document"]
-    return agent.summarise(req.text, req.max_sentences)
+    return council.agents["document"].summarise(req.text, req.max_sentences)
 
 @app.get("/api/agents/document/report")
 def document_report():
@@ -184,13 +279,11 @@ def document_report():
 
 @app.post("/api/agents/watchtower/alert")
 def watchtower_alert(req: AlertRequest):
-    agent = council.agents["watchtower"]
-    return agent.send_alert(req.model_dump())
+    return council.agents["watchtower"].send_alert(req.model_dump())
 
 @app.get("/api/agents/watchtower/alerts")
 def watchtower_alerts(unacknowledged_only: bool = False):
-    agent = council.agents["watchtower"]
-    return {"alerts": agent.get_alerts(unacknowledged_only=unacknowledged_only)}
+    return {"alerts": council.agents["watchtower"].get_alerts(unacknowledged_only=unacknowledged_only)}
 
 @app.get("/api/agents/watchtower/uptime")
 def watchtower_uptime():

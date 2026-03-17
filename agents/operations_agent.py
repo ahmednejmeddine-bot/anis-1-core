@@ -3,8 +3,28 @@ OperationsAgent – Monitors business processes, tracks KPIs,
 manages workflow optimisation, and handles incident response.
 """
 
+import sys, os
+sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+
 from datetime import datetime
 from typing import Any
+
+from services.llm_service import chat, LLMError
+
+SYSTEM_PROMPT = """You are the OperationsAgent for Abdeljelil Group, part of the ANIS-1 Autonomous Neural Intelligence System.
+
+Your mandate is to keep every business process running at peak efficiency and to minimise disruption.
+
+Behavioural guidelines:
+- Prioritise incident response over routine monitoring.
+- Classify severity consistently: critical → high → medium → low.
+- Always include root-cause hypotheses in incident reports.
+- Track SLA adherence rigorously and escalate breaches immediately.
+- Propose measurable, actionable optimisation steps.
+- Structure responses with clear headings, bullet points, and concise paragraphs.
+
+Tone: Operational, methodical, direct.
+Scope: Process monitoring · KPI tracking · Workflow optimisation · Incident response."""
 
 
 class OperationsAgent:
@@ -24,8 +44,35 @@ class OperationsAgent:
         self._active_incidents: list[dict[str, Any]] = []
 
     # ------------------------------------------------------------------
+    # AI-powered method
+    # ------------------------------------------------------------------
+
+    def ask(self, task_description: str, context: str = "") -> dict[str, Any]:
+        """Send a free-form task to OpenAI using the OperationsAgent system prompt."""
+        self.status = "active"
+        self.last_run = datetime.utcnow()
+
+        user_message = f"Context:\n{context}\n\nTask:\n{task_description}" if context else task_description
+
+        try:
+            response = chat(SYSTEM_PROMPT, user_message)
+            self.status = "idle"
+            return {
+                "agent": self.name,
+                "task": task_description,
+                "timestamp": datetime.utcnow().isoformat(),
+                "response": response,
+                "model": "gpt-4o",
+            }
+        except LLMError as exc:
+            self.status = "idle"
+            return {"agent": self.name, "error": str(exc), "timestamp": datetime.utcnow().isoformat()}
+
+    # ------------------------------------------------------------------
+    # Deterministic methods (unchanged)
+    # ------------------------------------------------------------------
+
     def monitor_processes(self, processes: list[dict[str, Any]]) -> dict[str, Any]:
-        """Evaluate a list of running processes and flag unhealthy ones."""
         self.status = "active"
         self.last_run = datetime.utcnow()
 
@@ -54,7 +101,6 @@ class OperationsAgent:
         }
 
     def track_kpis(self, kpis: dict[str, float], targets: dict[str, float]) -> dict[str, Any]:
-        """Compare current KPI values against targets and score performance."""
         self.status = "active"
         self.last_run = datetime.utcnow()
 
@@ -80,7 +126,6 @@ class OperationsAgent:
         }
 
     def optimize_workflow(self, workflow: dict[str, Any]) -> dict[str, Any]:
-        """Identify bottlenecks in a workflow and suggest improvements."""
         self.status = "active"
         self.last_run = datetime.utcnow()
 
@@ -100,7 +145,6 @@ class OperationsAgent:
         }
 
     def incident_response(self, incident: dict[str, Any]) -> dict[str, Any]:
-        """Log an incident and return a response action plan."""
         self.status = "active"
         self.last_run = datetime.utcnow()
 
