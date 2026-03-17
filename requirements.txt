@@ -1,6 +1,1 @@
-fastapi[standard]
-openai
-langchain
-crewai
-supabase
-pydantic
+fastapi[standard]\nopenai\nlangchain\nlangchain-openai\ncrewai\nsupabase\npydantic
