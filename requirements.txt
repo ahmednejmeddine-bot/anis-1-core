@@ -1,0 +1,6 @@
+fastapi[standard]
+openai
+langchain
+crewai
+supabase
+pydantic
