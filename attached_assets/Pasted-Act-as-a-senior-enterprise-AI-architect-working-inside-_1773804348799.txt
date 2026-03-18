@@ -1,0 +1,78 @@
+Act as a senior enterprise AI architect working inside this ANIS-1 Replit project.
+
+Goal:
+Upgrade ANIS-1 from a generic multi-agent system into a business-specialized executive council for Abdeljelil Group.
+
+What to do:
+1. Inspect the existing agent files:
+   - agents/finance_agent.py
+   - agents/operations_agent.py
+   - agents/strategy_agent.py
+   - agents/watchtower_agent.py
+   - agents/reviewer_agent.py
+
+2. Upgrade each agent’s prompt/backstory/goal so it becomes specialized for:
+   - industrial manufacturing
+   - packaging/converting operations
+   - executive decision-making
+   - KPI-driven analysis
+   - practical implementation priorities
+
+3. Add Abdeljelil Group business context to all relevant agents:
+   - manufacturing-focused industrial group
+   - factory performance, finance, strategic expansion, and risk control
+   - recommendations must be executive-level, practical, and action-oriented
+
+4. Improve FinanceAgent to reason about:
+   - cash flow
+   - EBITDA/margins
+   - CAPEX
+   - ROI/payback
+   - working capital
+   - liquidity and risk
+
+5. Improve OperationsAgent to reason about:
+   - OEE
+   - downtime
+   - maintenance
+   - throughput
+   - quality losses
+   - supply chain bottlenecks
+
+6. Improve StrategyAgent to reason about:
+   - market expansion
+   - competitive positioning
+   - investment priorities
+   - AI/automation transformation
+   - growth opportunities
+
+7. Improve WatchtowerAgent to reason about:
+   - operational alerts
+   - financial risks
+   - weak signals
+   - disruption risks
+   - strategic threats
+
+8. Improve ReviewerAgent so it behaves like a board-level executive reviewer that:
+   - detects contradictions
+   - synthesizes all outputs
+   - produces sharper final recommendations
+
+9. Improve services/task_classifier.py so executive/industrial tasks are classified more accurately.
+
+10. Keep the API, dashboard, and current working flow intact.
+
+11. After editing, test with this task:
+Prepare a 12-month executive roadmap for Abdeljelil Group to improve industrial performance, financial control, strategic expansion, and risk monitoring.
+
+12. Show me:
+- files changed
+- what was improved
+- whether the test succeeded
+- path of the generated report
+
+Rules:
+- Make clean minimal edits
+- Do not break the current working app
+- Keep output saving in outputs/
+- Focus on practical business specialization, not generic wording
