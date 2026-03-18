@@ -439,6 +439,3 @@ def watchtower_report():
 
 # ---------------------------------------------------------------------------
 
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run("api.server:app", host="localhost", port=8000, reload=True)
