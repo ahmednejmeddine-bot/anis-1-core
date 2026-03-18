@@ -14,27 +14,36 @@ _AGENT_KEYWORDS: dict[str, list[str]] = {
     "finance": [
         "budget", "revenue", "forecast", "profit", "loss", "cash", "financial",
         "invoice", "expense", "cost", "funding", "roi", "margin", "investment",
-        "capital", "spend", "earning", "valuation", "liquidity",
+        "capital", "spend", "earning", "valuation", "liquidity", "pricing",
+        "subscription", "saas", "monetise", "monetize", "billing", "payment",
     ],
     "operations": [
         "process", "workflow", "kpi", "incident", "sla", "capacity", "operations",
         "monitoring", "performance", "bottleneck", "efficiency", "throughput",
-        "logistics", "delivery", "pipeline", "team", "headcount",
+        "logistics", "delivery", "pipeline", "team", "headcount", "build",
+        "deploy", "launch", "implement", "platform", "infrastructure", "factory",
+        "manufacturing", "production", "supply chain", "automation", "integration",
+        "system", "service", "scalability", "architecture",
     ],
     "strategy": [
         "market", "strategy", "competitive", "initiative", "goal", "objective",
         "vision", "growth", "expansion", "opportunity", "positioning", "roadmap",
-        "plan", "target", "direction", "partnership", "acquisition",
+        "plan", "target", "direction", "partnership", "acquisition", "startup",
+        "enterprise", "business", "saas", "product", "customer", "segment",
+        "innovation", "differentiation", "go-to-market", "gtm", "disruption",
+        "smart", "digital", "transformation", "industry",
     ],
     "document": [
         "document", "report", "summary", "extract", "draft", "write", "summarise",
         "classify", "text", "content", "note", "memo", "brief", "template",
-        "presentation", "documentation",
+        "presentation", "documentation", "proposal", "specification", "spec",
+        "requirements", "contract", "policy",
     ],
     "watchtower": [
-        "health", "alert", "anomaly", "uptime", "monitor", "system", "security",
+        "health", "alert", "anomaly", "uptime", "monitor", "security",
         "threat", "status", "availability", "surveillance", "risk", "incident",
-        "vulnerability", "breach", "reliability",
+        "vulnerability", "breach", "reliability", "compliance", "audit",
+        "firewall", "intrusion", "access control", "data protection",
     ],
 }
 

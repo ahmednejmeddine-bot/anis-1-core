@@ -1,0 +1,73 @@
+Act as a senior Python/CrewAI engineer working inside this Replit project.
+
+Goal:
+Find the real ANIS-1 / CrewAI project files in this workspace and upgrade the system by adding a Reviewer Agent, then wire it into the orchestrator and keep the app runnable.
+
+What you must do step by step:
+1. Locate the real project root in this Replit workspace.
+   - Search for folders/files such as:
+     - crewai_dev_company
+     - agents
+     - orchestrator
+     - config
+     - workflows
+     - main.py
+   - If there are duplicate placeholder files at the workspace root, ignore them and work only inside the real project folder.
+
+2. Inspect the existing structure and confirm which files already exist:
+   - agents/market_analyst.py
+   - agents/product_manager.py
+   - agents/system_architect.py
+   - agents/ui_designer.py
+   - agents/developer.py
+   - agents/qa_tester.py
+   - agents/devops.py
+   - orchestrator/orchestrator.py
+   - config/settings.py
+   - main.py
+
+3. Create a new file:
+   - agents/reviewer.py
+
+4. In reviewer.py, create a Reviewer Agent for CrewAI with:
+   - role: AI Project Reviewer
+   - purpose: review outputs from all agents, detect contradictions, improve clarity, and produce a final executive report
+   - verbose=True
+   - allow_delegation=False
+
+5. Update the orchestrator so it:
+   - imports the reviewer agent
+   - creates the reviewer agent
+   - includes the reviewer in the workflow after the other agents
+   - produces a better final report structure with these sections:
+     1. Executive Summary
+     2. Market Analysis
+     3. Product Requirements
+     4. System Architecture
+     5. UI/UX Design
+     6. Implementation Plan
+     7. Testing Strategy
+     8. DevOps and Deployment
+     9. Final Recommendations
+
+6. Keep the existing app behavior working:
+   - do not break main.py
+   - do not break config/settings.py
+   - do not remove current agents
+   - keep outputs being saved to the outputs folder
+
+7. After editing, run a validation test from the correct project root:
+   - python main.py "build a SaaS platform for smart factories"
+
+8. Then show me:
+   - which files were changed
+   - the exact diff/summary of changes
+   - whether the run succeeded or failed
+   - the path of the generated output report
+
+Rules:
+- Make the smallest clean changes necessary.
+- Prefer editing existing project files instead of creating unnecessary new folders.
+- If the real project is not in the workspace root, first tell me the exact path you found and then continue working there.
+- If something is broken, fix it and explain briefly.
+- Do not ask me unnecessary questions; inspect the workspace and proceed.

@@ -16,6 +16,7 @@ from agents.operations_agent import OperationsAgent
 from agents.strategy_agent import StrategyAgent
 from agents.document_agent import DocumentAgent
 from agents.watchtower_agent import WatchtowerAgent
+from agents.reviewer_agent import ReviewerAgent
 
 
 TASK_ROUTING: dict[str, list[str]] = {
@@ -58,6 +59,7 @@ class AICouncil:
             "strategy": StrategyAgent(),
             "document": DocumentAgent(),
             "watchtower": WatchtowerAgent(),
+            "reviewer": ReviewerAgent(),
         }
         self._activity_log: list[dict[str, Any]] = []
         self._session_start = datetime.utcnow()

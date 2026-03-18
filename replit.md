@@ -14,17 +14,22 @@ anis-1-core/
 │   ├── operations_agent.py     # Process monitoring, KPIs, incident response + GPT-4o ask()
 │   ├── strategy_agent.py       # Market analysis, competitive intelligence + GPT-4o ask()
 │   ├── document_agent.py       # Document processing, summarisation + GPT-4o ask()
-│   └── watchtower_agent.py     # System health, anomaly detection + GPT-4o ask()
+│   ├── watchtower_agent.py     # System health, anomaly detection + GPT-4o ask()
+│   └── reviewer_agent.py       # Meta-agent: contradiction detection + 9-section executive report
 ├── services/
-│   └── llm_service.py          # Shared OpenAI client – chat(), get_client(), LLMError
+│   ├── llm_service.py          # Shared OpenAI client – chat(), get_client(), LLMError
+│   ├── task_classifier.py      # Keyword scorer – decides single-agent vs CrewAI crew mode
+│   └── crew_service.py         # CrewAI orchestrator – assembles crew + ReviewerAgent, saves reports
 ├── council/
-│   └── ai_council.py           # Central orchestrator – routes tasks to agents
+│   └── ai_council.py           # Central registry for all 6 agents + activity log
 ├── api/
 │   └── server.py               # FastAPI server (port 8000, localhost)
 ├── dashboard/
 │   └── commander_dashboard.tsx # React Commander Dashboard
+├── outputs/                    # Auto-generated executive reports (markdown, timestamped)
 ├── prompts/
 │   └── agent_prompts.md        # System prompts for each agent
+├── main.py                     # CLI entry point – python main.py "<task>" [--agent] [--context]
 ├── src/
 │   └── main.tsx                # React entry point
 ├── index.html                  # HTML shell for Vite

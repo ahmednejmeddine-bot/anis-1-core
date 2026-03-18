@@ -39,10 +39,16 @@ interface Alert {
 interface AIResponse {
   agent: string
   agent_name: string
+  agents_used: string[]
+  agent_count: number
+  execution_mode: 'single_agent' | 'crew'
+  reviewer_included?: boolean
   task: string
   response: string
   model: string
   auto_routed: boolean
+  execution_time_s?: number
+  output_path?: string
   timestamp: string
 }
 
@@ -68,11 +74,13 @@ const SEVERITY_COLORS: Record<string, string> = {
 
 const AGENT_OPTIONS = [
   { value: '', label: 'Auto-route (recommended)' },
+  { value: 'crew', label: '🤝 Full CrewAI Council (all agents + reviewer)' },
   { value: 'finance', label: 'FinanceAgent' },
   { value: 'operations', label: 'OperationsAgent' },
   { value: 'strategy', label: 'StrategyAgent' },
   { value: 'document', label: 'DocumentAgent' },
   { value: 'watchtower', label: 'WatchtowerAgent' },
+  { value: 'reviewer', label: 'ReviewerAgent' },
 ]
 
 const EXAMPLE_TASKS = [
@@ -183,38 +191,95 @@ function AlertPanel({ alerts }: { alerts: Alert[] }) {
 }
 
 function AIResponseCard({ result }: { result: AIResponse }) {
-  const color = AGENT_COLORS[result.agent] || '#6366f1'
+  const isCrew = result.execution_mode === 'crew'
+  const color = isCrew ? '#a78bfa' : (AGENT_COLORS[result.agent] || '#6366f1')
+  const modeLabel = isCrew ? 'CrewAI Council' : 'Single Agent'
+  const modeBg = isCrew ? '#a78bfa' : '#6366f1'
+
   return (
     <div style={{
       background: '#0d1117', border: `1px solid ${color}44`, borderRadius: 12,
       padding: '1.25rem', marginTop: 16,
     }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+      {/* Header row */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+          {/* Execution mode badge */}
           <span style={{
-            background: `${color}22`, color, border: `1px solid ${color}44`,
+            background: `${modeBg}22`, color: modeBg, border: `1px solid ${modeBg}55`,
+            borderRadius: 999, padding: '3px 10px', fontSize: 11, fontWeight: 700,
+          }}>
+            {modeLabel}
+          </span>
+          {/* Agent name */}
+          <span style={{
+            background: `${color}18`, color, border: `1px solid ${color}44`,
             borderRadius: 999, padding: '3px 10px', fontSize: 11, fontWeight: 700,
           }}>
             {result.agent_name}
           </span>
+          {/* Reviewer badge */}
+          {result.reviewer_included && (
+            <span style={{
+              background: '#4ade8018', color: '#4ade80', border: '1px solid #4ade8044',
+              borderRadius: 999, padding: '3px 10px', fontSize: 11, fontWeight: 700,
+            }}>
+              ✓ Reviewer
+            </span>
+          )}
           {result.auto_routed && (
             <span style={{ color: '#475569', fontSize: 11 }}>auto-routed</span>
           )}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          {result.execution_time_s && (
+            <span style={{ color: '#64748b', fontSize: 11, fontFamily: 'monospace' }}>
+              {result.execution_time_s}s
+            </span>
+          )}
           <span style={{ color: '#4ade80', fontSize: 11, fontFamily: 'monospace' }}>{result.model}</span>
           <span style={{ color: '#475569', fontSize: 11 }}>{timeAgo(result.timestamp)}</span>
         </div>
       </div>
+
+      {/* Agents used (crew mode) */}
+      {isCrew && result.agents_used && result.agents_used.length > 0 && (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginBottom: 12 }}>
+          {result.agents_used.map(a => {
+            const ac = a === 'reviewer' ? '#4ade80' : (AGENT_COLORS[a] || '#6366f1')
+            return (
+              <span key={a} style={{
+                background: `${ac}14`, color: ac, border: `1px solid ${ac}33`,
+                borderRadius: 999, padding: '2px 8px', fontSize: 10, fontFamily: 'monospace',
+              }}>{a}</span>
+            )
+          })}
+        </div>
+      )}
+
+      {/* Task label */}
       <p style={{ color: '#64748b', fontSize: 11, marginBottom: 12, fontStyle: 'italic' }}>
         "{result.task}"
       </p>
+
+      {/* Response body */}
       <div style={{
         color: '#e2e8f0', fontSize: 13.5, lineHeight: 1.75,
         whiteSpace: 'pre-wrap', wordBreak: 'break-word',
       }}>
         {result.response}
       </div>
+
+      {/* Output file path */}
+      {result.output_path && (
+        <div style={{
+          marginTop: 14, background: '#0f172a', borderRadius: 6,
+          padding: '0.5rem 0.75rem', borderLeft: '3px solid #4ade8055',
+        }}>
+          <span style={{ color: '#475569', fontSize: 11 }}>Report saved → </span>
+          <span style={{ color: '#4ade80', fontSize: 11, fontFamily: 'monospace' }}>{result.output_path}</span>
+        </div>
+      )}
     </div>
   )
 }
