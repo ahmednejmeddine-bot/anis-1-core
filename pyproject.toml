@@ -1,15 +1,5 @@
-[project]
-name = "repl-nix-workspace"
-version = "0.1.0"
-description = "Add your description here"
-requires-python = ">=3.11"
-dependencies = [
-    "autogen-agentchat>=0.7.5",
-    "crewai>=1.6.1",
-    "fastapi>=0.135.1",
-    "langchain>=1.2.12",
-    "openai>=2.28.0",
-    "pydantic>=2.12.5",
-    "python-multipart>=0.0.22",
-    "uvicorn[standard]>=0.42.0",
-]
+[project.scripts]
+run_crew = "anis_1_core.main:run"
+train = "anis_1_core.main:train"
+replay = "anis_1_core.main:replay"
+test = "anis_1_core.main:test"

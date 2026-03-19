@@ -4,7 +4,7 @@ expertMode = true
 
 [nix]
 channel = "stable-25_05"
-packages = ["libxcrypt", "curl"]
+packages = ["libxcrypt", "curl", "proxify", "openmolcas", "sptk", "haskellPackages.daemons", "triton-llvm"]
 
 [workflows]
 runButton = "Project"
@@ -46,6 +46,10 @@ task = "shell.exec"
 args = "python3 -m uvicorn api.server:app --host localhost --port 8000 --reload"
 
 [[ports]]
+localPort = 4370
+externalPort = 3001
+
+[[ports]]
 localPort = 5000
 externalPort = 80
 
@@ -57,6 +61,10 @@ externalPort = 3000
 localPort = 8000
 externalPort = 8000
 exposeLocalhost = true
+
+[[ports]]
+localPort = 8081
+externalPort = 8081
 
 [deployment]
 deploymentTarget = "autoscale"

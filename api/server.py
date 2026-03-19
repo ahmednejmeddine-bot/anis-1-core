@@ -32,6 +32,7 @@ from pydantic import BaseModel
 from council.ai_council import AICouncil
 from services.llm_service import LLMError
 from services import task_classifier, crew_service
+from services.executive_status_service import get_executive_status
 
 # ---------------------------------------------------------------------------
 app = FastAPI(
@@ -437,8 +438,12 @@ def watchtower_report():
     return council.agents["watchtower"].generate_report()
 
 
+
 # ---------------------------------------------------------------------------
-from services.executive_status_service import get_executive_status
+# Executive status endpoint
+# ---------------------------------------------------------------------------
+
 @app.get("/executive_status")
+@app.get("/api/executive_status")
 def executive_status():
     return get_executive_status()
