@@ -1,54 +1,136 @@
-# Anis1Core Crew
+# ANIS-1 — Autonomous Neural Intelligence System
+### Abdeljelil Group Executive Council · Powered by CrewAI + GPT-4o
 
-Welcome to the Anis1Core Crew project, powered by [crewAI](https://crewai.com). This template is designed to help you set up a multi-agent AI system with ease, leveraging the powerful and flexible framework provided by crewAI. Our goal is to enable your agents to collaborate effectively on complex tasks, maximizing their collective intelligence and capabilities.
+---
+
+## What This Is
+
+ANIS-1 is a six-agent CrewAI executive council that delivers board-level
+analysis across finance, operations, strategy, document intelligence,
+risk monitoring, and executive synthesis for Abdeljelil Group's industrial
+manufacturing and packaging/converting operations.
+
+### Six Specialist Agents
+
+| Agent | Role | Domain |
+|---|---|---|
+| `finance_analyst` | Chief Financial Analyst | EBITDA, CAPEX, cash flow, working capital, FX risk |
+| `operations_manager` | Chief Operations Officer | OEE, downtime, maintenance, throughput, quality |
+| `strategy_advisor` | Chief Strategy Officer | Market expansion, Industry 4.0, investment prioritisation |
+| `document_analyst` | Chief Document Officer | Intelligence extraction, KPI tables, action items |
+| `risk_monitor` | Chief Risk Officer | Operational, financial, and strategic risk surveillance |
+| `executive_reviewer` | Board-Level Reviewer | Contradiction detection + 9-section executive synthesis |
+
+The crew runs **sequentially**. The `executive_reviewer` always runs last,
+reading all prior outputs as context, and produces a 9-section executive
+report saved to `outputs/anis1_executive_report.md`.
+
+---
+
+## Prerequisites
+
+- Python 3.10–3.13
+- [uv](https://docs.astral.sh/uv/) package manager
+- OpenAI API key with GPT-4o access
+
+---
 
 ## Installation
 
-Ensure you have Python >=3.10 <3.14 installed on your system. This project uses [UV](https://docs.astral.sh/uv/) for dependency management and package handling, offering a seamless setup and execution experience.
-
-First, if you haven't already, install uv:
-
 ```bash
-pip install uv
+# From inside the anis_1_core/ directory:
+pip install uv          # if uv not installed
+
+crewai install          # installs deps + generates uv.lock
 ```
 
-Next, navigate to your project directory and install the dependencies:
-
-(Optional) Lock the dependencies and install them by using the CLI command:
+Or manually:
 ```bash
+cd anis_1_core
+uv sync
+```
+
+---
+
+## Configuration
+
+Set your OpenAI API key in `anis_1_core/.env`:
+
+```
+OPENAI_API_KEY=sk-...
+```
+
+---
+
+## Running the Crew
+
+### Default run (12-month executive roadmap task):
+```bash
+cd anis_1_core
+crewai run
+```
+
+### Custom task via trigger payload:
+```bash
+cd anis_1_core
+python -c "
+from anis_1_core.main import run_with_trigger
+import sys
+sys.argv = ['main', '{\"task_input\": \"Analyse Q3 financial performance\"}']
+run_with_trigger()
+"
+```
+
+### Output
+The final 9-section executive report is saved to:
+```
+outputs/anis1_executive_report.md
+```
+
+---
+
+## Project Structure
+
+```
+anis_1_core/
+├── pyproject.toml                         # CrewAI deployment manifest
+├── .env                                   # OPENAI_API_KEY (not committed)
+├── outputs/                               # Generated executive reports
+└── src/
+    └── anis_1_core/
+        ├── __init__.py                    # Package declaration
+        ├── crew.py                        # @CrewBase class — 6 agents, 6 tasks
+        ├── agents.py                      # Programmatic agent factory functions
+        ├── tasks.py                       # Programmatic task factory functions
+        ├── main.py                        # Entry points: run/train/replay/test
+        └── config/
+            ├── agents.yaml               # Agent role/goal/backstory definitions
+            └── tasks.yaml                # Task descriptions and expected outputs
+```
+
+---
+
+## Deploying to CrewAI Enterprise
+
+1. Generate the lock file:
+```bash
+cd anis_1_core
 crewai install
 ```
-### Customizing
 
-**Add your `OPENAI_API_KEY` into the `.env` file**
-
-- Modify `src/anis_1_core/config/agents.yaml` to define your agents
-- Modify `src/anis_1_core/config/tasks.yaml` to define your tasks
-- Modify `src/anis_1_core/crew.py` to add your own logic, tools and specific args
-- Modify `src/anis_1_core/main.py` to add custom inputs for your agents and tasks
-
-## Running the Project
-
-To kickstart your crew of AI agents and begin task execution, run this from the root folder of your project:
-
+2. Commit everything including `uv.lock`:
 ```bash
-$ crewai run
+git add anis_1_core/
+git commit -m "feat: ANIS-1 CrewAI deployment structure for Abdeljelil Group"
+git push origin main
 ```
 
-This command initializes the anis-1-core Crew, assembling the agents and assigning them tasks as defined in your configuration.
+3. In CrewAI Studio: connect the repository, set `OPENAI_API_KEY` as a secret,
+   and deploy. The entry point is `anis_1_core.main:run_with_trigger`.
 
-This example, unmodified, will run the create a `report.md` file with the output of a research on LLMs in the root folder.
-
-## Understanding Your Crew
-
-The anis-1-core Crew is composed of multiple AI agents, each with unique roles, goals, and tools. These agents collaborate on a series of tasks, defined in `config/tasks.yaml`, leveraging their collective skills to achieve complex objectives. The `config/agents.yaml` file outlines the capabilities and configurations of each agent in your crew.
+---
 
 ## Support
 
-For support, questions, or feedback regarding the Anis1Core Crew or crewAI.
-- Visit our [documentation](https://docs.crewai.com)
-- Reach out to us through our [GitHub repository](https://github.com/joaomdmoura/crewai)
-- [Join our Discord](https://discord.com/invite/X4JWnZnxPb)
-- [Chat with our docs](https://chatg.pt/DWjSBZn)
-
-Let's create wonders together with the power and simplicity of crewAI.
+- CrewAI docs: https://docs.crewai.com
+- CrewAI Enterprise: https://app.crewai.com

@@ -1,0 +1,50 @@
+Fix this repository and convert it into a valid CrewAI deployment project for CrewAI Enterprise.
+
+Project name: anis-1-core
+
+Goal:
+Make this repo deployable in CrewAI by creating the missing standard CrewAI project structure and files required by deployment.
+
+Current deployment errors to solve:
+1. Cannot find pyproject.toml
+2. Expected to find at least one of these files: uv.lock or poetry.lock
+3. Cannot find src//crew.py or src//config
+
+What I want you to do:
+1. Create a valid Python project structure for CrewAI
+2. Create pyproject.toml with the correct package configuration and CrewAI dependencies
+3. Create uv.lock if possible; otherwise prepare the project so I can generate it with the install command
+4. Create the src package structure using:
+   src/anis_1_core/
+5. Create these files:
+   - src/anis_1_core/__init__.py
+   - src/anis_1_core/crew.py
+   - src/anis_1_core/agents.py
+   - src/anis_1_core/tasks.py
+   - src/anis_1_core/main.py
+   - src/anis_1_core/config/agents.yaml
+   - src/anis_1_core/config/tasks.yaml
+6. Add a minimal but valid CrewAI implementation so deployment validation can pass
+7. Make sure imports are consistent with the package name anis_1_core
+8. Do not create a generic app; create a real CrewAI project skeleton
+9. Keep the project simple, clean, and deployment-ready
+10. Add a README with run and deploy notes
+
+Implementation requirements:
+- Use CrewAI best-practice structure
+- Ensure crew.py exposes the crew definition clearly
+- Ensure agents.py and tasks.py are aligned with the yaml config
+- Ensure config folder exists and is not empty
+- Ensure the project can be installed and locked
+- Ensure the repository is ready to push to GitHub for CrewAI deployment
+
+Also:
+- Inspect the current repo first
+- Reuse existing useful files if present
+- Repair rather than destroy if possible
+- Show me exactly which files were created or modified
+- After the changes, tell me the exact shell commands I should run to generate/install the lock file, commit, and push
+
+Important:
+This task is only for fixing the repository structure for CrewAI deployment.
+Do not try to solve CrewAI Studio API credential issues inside the code.

@@ -1,17 +1,175 @@
-research_task:
+financial_analysis_task:
   description: >
-    Conduct a thorough research about {topic}
-    Make sure you find any interesting and relevant information given
-    the current year is {current_year}.
-  expected_output: >
-    A list with 10 bullet points of the most relevant information about {topic}
-  agent: researcher
+    Conduct a comprehensive financial analysis for Abdeljelil Group on the
+    following task: {task_input}
 
-reporting_task:
-  description: >
-    Review the context you got and expand each topic into a full section for a report.
-    Make sure the report is detailed and contains any and all relevant information.
+    Cover all of the following:
+    - EBITDA margin and gross margin by production line (actual vs. target)
+    - CAPEX requirements with ROI and payback period (target <3 years)
+    - Working capital position: raw material inventory days, WIP, debtor days,
+      creditor terms, and cash conversion cycle
+    - Cash flow adequacy for planned investments over the next 12 months
+    - Liquidity ratios: current ratio, DSCR, covenant headroom
+    - Cost structure: energy cost per ton of output, labour cost per unit
+    - FX/currency exposure on raw material imports and hedging effectiveness
+    - Top 3 financial risks with magnitude estimates and probability
+
+    Label all figures as actual, estimate, or forecast. Use clear units.
   expected_output: >
-    A fully fledged report with the main topics, each with a full section of information.
-    Formatted as markdown without '```'
-  agent: reporting_analyst
+    A structured financial analysis report containing:
+    - Executive Finding (2-3 sentences, board-level)
+    - Supporting KPIs in a table (metric | actual | target | status)
+    - Top 3 financial risks with magnitude, probability, and recommended action
+    - Recommended actions with owner and delivery timeline
+    Formatted as clean markdown.
+  agent: finance_analyst
+
+operations_analysis_task:
+  description: >
+    Analyse the operational performance of Abdeljelil Group's manufacturing
+    and packaging/converting facilities for: {task_input}
+
+    Cover all of the following:
+    - Current OEE (Availability × Performance × Quality) vs. world-class 85%
+      target; quantify revenue and volume lost due to the gap
+    - Top 3 unplanned downtime causes with MTBF and MTTR metrics
+    - Maintenance strategy maturity level (reactive / preventive / predictive)
+      and highest-priority upgrade recommendation with ROI justification
+    - System constraint identification using Theory of Constraints
+    - Quality losses: scrap rate (%), rework rate (%), first-pass yield (FPY),
+      COPQ estimate
+    - Top supply chain bottleneck with production impact quantification
+    - Changeover time as % of available production time; SMED opportunity
+    - Any active or overdue safety concerns (always CRITICAL severity)
+  expected_output: >
+    A structured operations report containing:
+    - OEE scorecard: Availability, Performance, Quality, Total OEE vs. target
+    - Top 3 downtime causes with MTBF/MTTR and cost per downtime hour
+    - Maintenance recommendation with expected OEE improvement and payback
+    - Prioritised action plan: action | owner | deadline | expected OEE impact
+    Formatted as clean markdown.
+  agent: operations_manager
+
+strategy_analysis_task:
+  description: >
+    Develop a strategic analysis and actionable recommendations for Abdeljelil
+    Group on: {task_input}
+
+    Address all of the following:
+    - Market expansion opportunities: rank the top 2 MENA or Sub-Saharan Africa
+      markets by attractiveness × strategic fit, with demand size, growth rate,
+      and barrier-to-entry assessment
+    - Competitive positioning: identify 2 segments with pricing power and
+      2 segments under commoditisation pressure
+    - Investment decision: compare capacity expansion vs. productivity
+      improvement vs. new product line, using IRR/NPV/payback for each option
+    - Industry 4.0 roadmap: sequence the top 3 automation/digitalisation
+      investments by dependency and ROI
+    - One vertical integration or M&A/partnership opportunity with synergy
+      quantification
+
+    Present 2-3 distinct options with financials before recommending.
+    Specify time horizons: immediate (0-3m), near-term (3-12m),
+    medium-term (1-3y), long-term (3y+).
+  expected_output: >
+    A strategic report containing:
+    - Context and key assumptions (clearly labelled)
+    - 2-3 strategic options table: option | investment | IRR/payback | key risk
+    - Recommended path with rationale
+    - Success metrics (measurable, time-bound)
+    - Key risks with mitigations
+    Formatted as clean markdown.
+  agent: strategy_advisor
+
+document_intelligence_task:
+  description: >
+    Process and extract key intelligence from all information gathered for:
+    {task_input}
+
+    Perform all of the following:
+    - Classify the document/information type
+    - Produce an executive summary (maximum 5 sentences)
+    - Extract all KPIs and quantitative data points into a structured table
+    - Identify all explicit and implied action items with suggested owners
+    - Classify any decisions required: strategic, operational, or financial
+    - Flag any information gaps that require further investigation
+  expected_output: >
+    A structured intelligence brief containing:
+    - Document type classification
+    - Executive summary (≤5 sentences)
+    - KPI and data table (metric | value | unit | source)
+    - Action items list (action | suggested owner | urgency)
+    - Decisions required with classification
+    - Information gaps identified
+    Formatted as clean markdown.
+  agent: document_analyst
+
+risk_monitoring_task:
+  description: >
+    Conduct a full risk surveillance sweep for Abdeljelil Group covering:
+    {task_input}
+
+    Assess risks across all four dimensions:
+    1. OPERATIONAL: OEE anomalies, machine failure signals, quality deviations,
+       safety near-misses, overdue maintenance assets
+    2. FINANCIAL: receivables ageing, EBITDA compression trend, raw material
+       price spikes vs. budget, cash flow shortfalls, covenant proximity
+    3. WEAK SIGNALS: supplier distress indicators, energy price trends,
+       logistics disruptions, key personnel attrition
+    4. STRATEGIC THREATS: competitor capacity expansions, technology disruption,
+       regulatory changes, customer concentration risk
+
+    For each identified risk: assign severity (CRITICAL/HIGH/MEDIUM/LOW),
+    estimate financial or operational impact, recommend a response,
+    and define the escalation path.
+    Correlate signals across dimensions to identify compounding risk clusters.
+  expected_output: >
+    A risk surveillance report containing:
+    - Severity-graded alert table:
+      SEVERITY | Signal | Dimension | Impact | Response | Escalation
+    - Top 3 correlated risk clusters with combined impact assessment
+    - Leading indicators to monitor with recommended monitoring cadence
+    - Immediate actions required (CRITICAL and HIGH severity only)
+    Formatted as clean markdown.
+  agent: risk_monitor
+
+executive_review_task:
+  description: >
+    You are the final reviewer. Review ALL outputs from the financial analysis,
+    operations analysis, strategy analysis, document intelligence, and risk
+    monitoring tasks for: {task_input}
+
+    Perform all three duties:
+    1. CONTRADICTION DETECTION: Identify every case where agents produced
+       conflicting figures, assumptions, or recommendations. Resolve each
+       contradiction or flag it explicitly if resolution requires data not
+       available in this session.
+    2. CLARITY IMPROVEMENT: Identify and rewrite any section that is
+       ambiguous, repetitive, or lacks actionable specificity. Shorten
+       verbose passages without losing substance.
+    3. EXECUTIVE SYNTHESIS: Assemble the final 9-section board-ready report
+       using ONLY information from the specialist agents — do not add new
+       data. Prioritise recommendations by urgency and financial impact.
+  expected_output: >
+    A complete 9-section executive report formatted as clean markdown:
+
+    ## 1. Executive Summary
+    ## 2. Financial Analysis
+    ## 3. Operations Assessment
+    ## 4. Strategic Recommendations
+    ## 5. Document and Knowledge Assessment
+    ## 6. Risk and Monitoring Status
+    ## 7. Cross-Agent Synthesis and Contradiction Resolution
+    ## 8. Risk Summary
+    ## 9. Final Recommendations and Next Steps
+       (Each recommendation: Action | Owner | Timeline | Success Metric)
+
+    Board-ready, actionable, no generic filler. Save output to file.
+  agent: executive_reviewer
+  context:
+    - financial_analysis_task
+    - operations_analysis_task
+    - strategy_analysis_task
+    - document_intelligence_task
+    - risk_monitoring_task
+  output_file: outputs/anis1_executive_report.md

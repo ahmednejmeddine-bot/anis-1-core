@@ -1,64 +1,128 @@
+"""
+ANIS-1 CrewAI Crew Definition — Abdeljelil Group Executive Council.
+
+Six specialist agents run sequentially:
+  1. finance_analyst        — Financial analysis, EBITDA, CAPEX, cash flow
+  2. operations_manager     — OEE, downtime, maintenance, throughput, quality
+  3. strategy_advisor       — Market expansion, competitive positioning, Industry 4.0
+  4. document_analyst       — Document intelligence, KPI extraction, action items
+  5. risk_monitor           — Operational, financial, and strategic risk surveillance
+  6. executive_reviewer     — Contradiction detection + 9-section executive synthesis
+
+The executive_reviewer reads all prior task outputs as context and produces
+the final board-ready report, saved to outputs/anis1_executive_report.md.
+"""
+
 from crewai import Agent, Crew, Process, Task
 from crewai.project import CrewBase, agent, crew, task
 from crewai.agents.agent_builder.base_agent import BaseAgent
 from typing import List
-# If you want to run a snippet of code before or after the crew starts,
-# you can use the @before_kickoff and @after_kickoff decorators
-# https://docs.crewai.com/concepts/crews#example-crew-class-with-decorators
+
 
 @CrewBase
 class Anis1Core():
-    """Anis1Core crew"""
+    """ANIS-1 Executive Council Crew for Abdeljelil Group."""
 
     agents: List[BaseAgent]
     tasks: List[Task]
 
-    # Learn more about YAML configuration files here:
-    # Agents: https://docs.crewai.com/concepts/agents#yaml-configuration-recommended
-    # Tasks: https://docs.crewai.com/concepts/tasks#yaml-configuration-recommended
-    
-    # If you would like to add tools to your agents, you can learn more about it here:
-    # https://docs.crewai.com/concepts/agents#agent-tools
+    # ------------------------------------------------------------------
+    # Agents — each loaded from config/agents.yaml
+    # ------------------------------------------------------------------
+
     @agent
-    def researcher(self) -> Agent:
+    def finance_analyst(self) -> Agent:
         return Agent(
-            config=self.agents_config['researcher'], # type: ignore[index]
-            verbose=True
+            config=self.agents_config['finance_analyst'],  # type: ignore[index]
+            verbose=True,
         )
 
     @agent
-    def reporting_analyst(self) -> Agent:
+    def operations_manager(self) -> Agent:
         return Agent(
-            config=self.agents_config['reporting_analyst'], # type: ignore[index]
-            verbose=True
+            config=self.agents_config['operations_manager'],  # type: ignore[index]
+            verbose=True,
         )
 
-    # To learn more about structured task outputs,
-    # task dependencies, and task callbacks, check out the documentation:
-    # https://docs.crewai.com/concepts/tasks#overview-of-a-task
+    @agent
+    def strategy_advisor(self) -> Agent:
+        return Agent(
+            config=self.agents_config['strategy_advisor'],  # type: ignore[index]
+            verbose=True,
+        )
+
+    @agent
+    def document_analyst(self) -> Agent:
+        return Agent(
+            config=self.agents_config['document_analyst'],  # type: ignore[index]
+            verbose=True,
+        )
+
+    @agent
+    def risk_monitor(self) -> Agent:
+        return Agent(
+            config=self.agents_config['risk_monitor'],  # type: ignore[index]
+            verbose=True,
+        )
+
+    @agent
+    def executive_reviewer(self) -> Agent:
+        return Agent(
+            config=self.agents_config['executive_reviewer'],  # type: ignore[index]
+            verbose=True,
+        )
+
+    # ------------------------------------------------------------------
+    # Tasks — each loaded from config/tasks.yaml
+    # ------------------------------------------------------------------
+
     @task
-    def research_task(self) -> Task:
+    def financial_analysis_task(self) -> Task:
         return Task(
-            config=self.tasks_config['research_task'], # type: ignore[index]
+            config=self.tasks_config['financial_analysis_task'],  # type: ignore[index]
         )
 
     @task
-    def reporting_task(self) -> Task:
+    def operations_analysis_task(self) -> Task:
         return Task(
-            config=self.tasks_config['reporting_task'], # type: ignore[index]
-            output_file='report.md'
+            config=self.tasks_config['operations_analysis_task'],  # type: ignore[index]
         )
+
+    @task
+    def strategy_analysis_task(self) -> Task:
+        return Task(
+            config=self.tasks_config['strategy_analysis_task'],  # type: ignore[index]
+        )
+
+    @task
+    def document_intelligence_task(self) -> Task:
+        return Task(
+            config=self.tasks_config['document_intelligence_task'],  # type: ignore[index]
+        )
+
+    @task
+    def risk_monitoring_task(self) -> Task:
+        return Task(
+            config=self.tasks_config['risk_monitoring_task'],  # type: ignore[index]
+        )
+
+    @task
+    def executive_review_task(self) -> Task:
+        return Task(
+            config=self.tasks_config['executive_review_task'],  # type: ignore[index]
+            output_file='outputs/anis1_executive_report.md',
+        )
+
+    # ------------------------------------------------------------------
+    # Crew — sequential pipeline, reviewer always last
+    # ------------------------------------------------------------------
 
     @crew
     def crew(self) -> Crew:
-        """Creates the Anis1Core crew"""
-        # To learn how to add knowledge sources to your crew, check out the documentation:
-        # https://docs.crewai.com/concepts/knowledge#what-is-knowledge
-
+        """Creates the ANIS-1 Executive Council crew."""
         return Crew(
-            agents=self.agents, # Automatically created by the @agent decorator
-            tasks=self.tasks, # Automatically created by the @task decorator
+            agents=self.agents,   # populated by @agent decorators above
+            tasks=self.tasks,     # populated by @task decorators above
             process=Process.sequential,
             verbose=True,
-            # process=Process.hierarchical, # In case you wanna use that instead https://docs.crewai.com/how-to/Hierarchical/
         )
