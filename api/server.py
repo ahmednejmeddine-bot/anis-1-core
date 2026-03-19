@@ -444,6 +444,5 @@ def watchtower_report():
 # ---------------------------------------------------------------------------
 
 @app.get("/executive_status")
-@app.get("/api/executive_status")
 def executive_status():
     return get_executive_status()
