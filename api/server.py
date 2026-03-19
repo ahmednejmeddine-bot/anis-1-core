@@ -31,7 +31,7 @@ from pydantic import BaseModel
 
 from council.ai_council import AICouncil
 from services.llm_service import LLMError
-from services import task_classifier, crew_service
+from services import task_classifier, crew_service, crew_dispatch_service
 from services.executive_status_service import get_executive_status
 
 # ---------------------------------------------------------------------------
@@ -263,14 +263,21 @@ async def _run_single_agent_dispatch(
 
     _log_activity(task, [agent_key], context)
 
+    dispatch_meta = crew_dispatch_service.classify_and_route(
+        task, context=context, force_agent=agent_key if not auto_routed else None
+    )
+
     return {
         "system": "ANIS-1",
+        "task": task,
+        "classified_domain": dispatch_meta["classified_domain"],
         "execution_mode": "single_agent",
+        "status": "dispatched",
+        "message": dispatch_meta["message"],
         "agent": agent_key,
         "agent_name": result.get("agent"),
         "agents_used": [agent_key],
         "agent_count": 1,
-        "task": task,
         "context_provided": bool(context),
         "auto_routed": auto_routed,
         "model": result.get("model", "gpt-4o"),
@@ -306,14 +313,19 @@ async def _run_crew_dispatch(
 
     _log_activity(task, agent_keys, context)
 
+    dispatch_meta = crew_dispatch_service.classify_and_route(task, context=context)
+
     return {
         "system": "ANIS-1",
+        "task": task,
+        "classified_domain": dispatch_meta["classified_domain"],
         "execution_mode": "crew",
+        "status": "dispatched",
+        "message": dispatch_meta["message"],
         "agent": "crew",
         "agent_name": "ANIS-1 CrewAI Council",
         "agents_used": result.get("agents_used", agent_keys),
         "agent_count": result.get("agent_count", len(agent_keys)),
-        "task": task,
         "context_provided": bool(context),
         "auto_routed": auto_routed,
         "model": result.get("model", "gpt-4o"),
