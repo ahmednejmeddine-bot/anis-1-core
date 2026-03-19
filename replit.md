@@ -33,7 +33,7 @@ anis-1-core/
 ├── src/
 │   └── main.tsx                # React entry point
 ├── index.html                  # HTML shell for Vite
-├── vite.config.ts              # Vite – port 5000, proxies /api /health /agents /dispatch_task
+├── vite.config.ts              # Vite – port 5000, proxies /api /health /agents /dispatch_task /executive_status
 ├── tsconfig.json               # TypeScript config
 └── package.json                # Node dependencies
 ```
@@ -56,15 +56,25 @@ anis-1-core/
 
 ## Running the Application
 
-### Frontend (Vite dev server)
-- Workflow: **Start application** → `npm run dev`
-- Port: **5000** (bound to 0.0.0.0, accessible via preview pane)
-- Proxies `/api`, `/health`, `/agents`, `/dispatch_task` to backend port 8000
+### Development
+| Process | Command | Port |
+|---------|---------|------|
+| Frontend | `npm run dev` (Workflow: **Start application**) | 5000 → external :80 |
+| Backend  | `python3 -m uvicorn api.server:app --host localhost --port 8000 --reload` (Workflow: **Start Backend**) | 8000 |
 
-### Backend (FastAPI)
-- Workflow: **Start Backend** → `python3 -m uvicorn api.server:app --host localhost --port 8000 --reload`
-- Port: **8000** (bound to localhost only)
-- Interactive API docs: `GET /docs` (Swagger UI)
+Vite dev server proxies `/api`, `/health`, `/agents`, `/dispatch_task`, `/executive_status` → `localhost:8000`.  
+Interactive API docs available at `GET /docs` (Swagger UI).
+
+### Production (Deployment)
+Configured for **VM** deployment (always-on — required for stateful agents and 30 s+ CrewAI runs).
+
+| Phase | Command | Notes |
+|-------|---------|-------|
+| Build | `npm run build` | Compiles React → `dist/` |
+| Run   | `bash start.sh` | Starts FastAPI (0.0.0.0:8000) + Vite preview (0.0.0.0:5000) |
+
+`start.sh` launches both processes; `vite preview` serves `dist/` and proxies API calls to the backend.  
+`vite.config.ts` has both `server.proxy` (dev) and `preview.proxy` (production) blocks, configured identically.
 
 ## Key API Endpoints
 
@@ -116,10 +126,12 @@ agent.ask(task_description: str, context: str = "") -> dict
 
 ## Dependencies
 
-### Python
-- `fastapi`, `uvicorn[standard]` – Web framework & server
-- `openai` – GPT-4o SDK
-- `pydantic`, `python-multipart` – Validation
+### Python (see `requirements.txt`)
+- `fastapi==0.135.1`, `uvicorn[standard]==0.42.0` – Web framework & server
+- `openai==2.29.0` – GPT-4o SDK
+- `pydantic==2.11.10`, `python-multipart==0.0.22` – Validation
+- `crewai[tools]==1.11.0` – Multi-agent orchestration (also in `anis_1_core/.venv`)
+- `httpx==0.28.1`, `websockets==16.0`, `watchfiles==1.1.1` – Uvicorn extras
 
 ### Node.js
 - `react`, `react-dom`, `vite`, `@vitejs/plugin-react`, `typescript`, `axios`
