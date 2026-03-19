@@ -1,0 +1,16 @@
+type ExecutiveStatus = {
+  timestamp: string;
+  empire_health_score: number;
+  finance_score: number;
+  operations_score: number;
+  strategy_score: number;
+  risk_score: number;
+  status: string;
+  watchtower_alerts: Array<{
+    area: string;
+    severity: string;
+    signal: string;
+    impact: string;
+    recommended_action: string;
+  }>;
+};

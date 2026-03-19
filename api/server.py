@@ -438,4 +438,7 @@ def watchtower_report():
 
 
 # ---------------------------------------------------------------------------
-
+from services.executive_status_service import get_executive_status
+@app.get("/executive_status")
+def executive_status():
+    return get_executive_status()
